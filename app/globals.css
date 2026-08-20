@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Bebas Neue", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+}
+
+html,
+body {
+  background-color: #0f1620;
+  color: #eaedf0;
+}
+
+body {
+  font-family: var(--font-body);
+}
+
+::selection {
+  background-color: #f0b429;
+  color: #0f1620;
+}
+
+/* Visible keyboard focus everywhere */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #f0b429;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.bg-court {
+  background-color: #0f1620;
+  background-image: linear-gradient(
+      rgba(234, 237, 240, 0.035) 1px,
+      transparent 1px
+    ),
+    linear-gradient(90deg, rgba(234, 237, 240, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+}

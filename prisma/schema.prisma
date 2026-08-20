@@ -1,0 +1,78 @@
+// Modelagem do banco de dados da Pelada A.Q.S
+//
+// Provider padrão: SQLite (zero configuração, arquivo local em prisma/dev.db).
+// Para usar Postgres ou MySQL em produção, troque só o bloco `datasource` (ver README).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Pessoa {
+  id            String   @id @default(uuid())
+  nomeCompleto  String
+  apelido       String
+  telefone      String   @unique // somente dígitos
+  ativo         Boolean  @default(false)
+  administrador Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  peladasAbertas Pelada[]    @relation("Responsavel")
+  inscricoes     Inscricao[]
+
+  @@map("pessoas")
+}
+
+model Pelada {
+  id            String   @id @default(uuid())
+  dataInicio    DateTime // sábado 19h - abertura das inscrições
+  diaEvento     DateTime // segunda 20h30 - dia do jogo
+  dataTermino   DateTime // segunda 19h - fim das inscrições
+  responsavelId String
+  responsavel   Pessoa   @relation("Responsavel", fields: [responsavelId], references: [id])
+  createdAt     DateTime @default(now())
+
+  inscricoes Inscricao[]
+
+  @@map("peladas")
+}
+
+enum ListaTipo {
+  GOLEIRO
+  JOGADOR
+  SUPLENTE
+}
+
+enum Posicao {
+  GOLEIRO
+  JOGADOR
+}
+
+model Inscricao {
+  id       String  @id @default(uuid())
+  peladaId String
+  pelada   Pelada  @relation(fields: [peladaId], references: [id], onDelete: Cascade)
+  pessoaId String
+  pessoa   Pessoa  @relation(fields: [pessoaId], references: [id])
+
+  lista           ListaTipo // GOLEIRO | JOGADOR | SUPLENTE
+  posicaoSuplente Posicao? // preenchido só quando lista = SUPLENTE
+
+  // Identifica o navegador/aparelho que fez a inscrição (cookie de longa
+  // duração, ver lib/device.ts). A constraint única abaixo garante no
+  // próprio banco que o mesmo aparelho não se inscreve 2x na mesma lista -
+  // sem essa trava dependeríamos só de checagem manual antes do insert.
+  deviceId String
+
+  createdAt DateTime @default(now()) // usado para ordem de chegada dos suplentes (FIFO)
+
+  @@unique([peladaId, pessoaId]) // 1 inscrição por pessoa, por lista
+  @@unique([peladaId, deviceId]) // 1 inscrição por aparelho, por lista
+  @@index([peladaId, lista])
+  @@map("inscricoes")
+}
