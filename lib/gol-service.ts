@@ -49,6 +49,18 @@ export async function listarEventosGol(peladaId: string): Promise<EventoGol[]> {
   return (rows as LinhaEventoGol[]).map(paraEventoGol);
 }
 
+/** Comparações de "agora" nunca usam NOW() do SQL (que depende do fuso do
+ * servidor MySQL) - sempre um new Date() calculado no Node. */
+function formatarDataHoraBR(data: Date | string): string {
+  return new Date(data).toLocaleString("pt-BR", {
+    timeZone: "America/Fortaleza",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /**
  * Registra um gol. Pelo menos um entre goleadorId/assistenteId precisa vir
  * preenchido. Ambos, quando informados, precisam ser pessoas que estejam na
@@ -73,11 +85,26 @@ export async function registrarGol(
     await conn.beginTransaction();
 
     const [peladaRows] = await conn.execute(
-      "SELECT id FROM peladas WHERE id = ? LIMIT 1",
+      "SELECT id, dia_evento, data_fim FROM peladas WHERE id = ? LIMIT 1",
       [peladaId],
     );
-    if (!(peladaRows as unknown[]).length) {
+    const peladaRow = (
+      peladaRows as { id: string; dia_evento: Date; data_fim: Date }[]
+    )[0];
+    if (!peladaRow) {
       throw new Error("Lista não encontrada.");
+    }
+
+    if (new Date(peladaRow.dia_evento).getTime() > Date.now()) {
+      throw new Error(
+        `Só é possível registrar gols a partir do início da pelada (${formatarDataHoraBR(peladaRow.dia_evento)}).`,
+      );
+    }
+
+    if (new Date(peladaRow.data_fim).getTime() < Date.now()) {
+      throw new Error(
+        `O prazo para registrar gols dessa pelada já encerrou (terminou às ${formatarDataHoraBR(peladaRow.data_fim)}).`,
+      );
     }
 
     const idsParaValidar = [goleadorId, assistenteId].filter(

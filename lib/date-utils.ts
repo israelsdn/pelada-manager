@@ -3,6 +3,8 @@
  * - dataInicio: sábado mais próximo (a partir de hoje, inclusive) às 19:00
  * - diaEvento: a segunda-feira seguinte a esse sábado às 20:30 (dia do jogo)
  * - dataTermino: essa mesma segunda-feira às 19:00 (fim das inscrições)
+ * - dataFim: horário em que o evento termina (padrão: 2h depois do diaEvento).
+ *   É até esse horário que a pelada continua aparecendo no dashboard/gols.
  *
  * Todas as datas são calculadas no horário local do servidor e convertidas
  * para ISO (UTC) antes de serem gravadas no banco.
@@ -10,6 +12,7 @@
 
 const SABADO = 6;
 const SEGUNDA = 1;
+const DURACAO_PADRAO_HORAS = 2;
 
 function proximoDiaDaSemana(base: Date, diaSemana: number): Date {
   const resultado = new Date(base);
@@ -28,6 +31,7 @@ export interface DatasPelada {
   dataInicio: string;
   diaEvento: string;
   dataTermino: string;
+  dataFim: string;
 }
 
 export function calcularDatasPelada(agora: Date = new Date()): DatasPelada {
@@ -37,11 +41,15 @@ export function calcularDatasPelada(agora: Date = new Date()): DatasPelada {
   const segunda = proximoDiaDaSemana(dataInicio, SEGUNDA);
   const diaEvento = comHorario(segunda, 20, 30);
   const dataTermino = comHorario(segunda, 19, 0);
+  const dataFim = new Date(
+    diaEvento.getTime() + DURACAO_PADRAO_HORAS * 60 * 60 * 1000,
+  );
 
   return {
     dataInicio: dataInicio.toISOString(),
     diaEvento: diaEvento.toISOString(),
     dataTermino: dataTermino.toISOString(),
+    dataFim: dataFim.toISOString(),
   };
 }
 
@@ -50,7 +58,7 @@ export function paraDatetimeLocal(iso: string): string {
   const d = new Date(iso);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-    d.getHours()
+    d.getHours(),
   )}:${pad(d.getMinutes())}`;
 }
 

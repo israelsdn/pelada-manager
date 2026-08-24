@@ -105,6 +105,7 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
     dataInicio: string;
     diaEvento: string;
     dataTermino: string;
+    dataFim: string;
   }) {
     setAbrindo(true);
     setMensagem(null);

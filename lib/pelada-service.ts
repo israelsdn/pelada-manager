@@ -15,6 +15,7 @@ interface LinhaPelada {
   data_inicio: Date;
   dia_evento: Date;
   data_termino: Date;
+  data_fim: Date;
   responsavel_id: string;
   atualizado_em: Date;
 }
@@ -44,7 +45,7 @@ async function montarPelada(row: LinhaPelada): Promise<Pelada> {
      JOIN pessoas p ON p.id = i.pessoa_id
      WHERE i.pelada_id = ?
      ORDER BY i.criado_em ASC`,
-    [row.id]
+    [row.id],
   );
   const inscricoes = rows as LinhaInscricao[];
 
@@ -53,9 +54,12 @@ async function montarPelada(row: LinhaPelada): Promise<Pelada> {
     dataInicio: new Date(row.data_inicio).toISOString(),
     diaEvento: new Date(row.dia_evento).toISOString(),
     dataTermino: new Date(row.data_termino).toISOString(),
+    dataFim: new Date(row.data_fim).toISOString(),
     responsavelId: row.responsavel_id,
     atualizadoEm: new Date(row.atualizado_em).toISOString(),
-    listaGoleiros: inscricoes.filter((i) => i.status === "goleiro").map(paraItemLista),
+    listaGoleiros: inscricoes
+      .filter((i) => i.status === "goleiro")
+      .map(paraItemLista),
     listaJogadores: inscricoes
       .filter((i) => i.status === "jogador")
       .map(paraItemLista),
@@ -72,38 +76,60 @@ export interface VersaoPelada {
 
 /**
  * Checagem leve de "mudou algo?" - só busca id + atualizado_em da pelada
- * aberta, sem fazer o JOIN pesado com inscrições/pessoas. Pensada para ser
- * chamada com frequência (polling) sem pesar no banco; o frontend só busca
- * os dados completos quando esse valor muda.
+ * atual (a mais recente aberta e ainda não encerrada), sem fazer o JOIN
+ * pesado com inscrições/pessoas. Pensada para ser chamada com frequência
+ * (polling) sem pesar no banco; o frontend só busca os dados completos
+ * quando esse valor muda.
  */
-export async function buscarVersaoPeladaAberta(): Promise<VersaoPelada | null> {
+export async function buscarVersaoPeladaAtual(): Promise<VersaoPelada | null> {
   const [rows] = await pool.execute(
-    "SELECT id, atualizado_em FROM peladas WHERE dia_evento > ? ORDER BY dia_evento ASC LIMIT 1",
-    [new Date()]
+    "SELECT id, atualizado_em FROM peladas WHERE data_fim > ? ORDER BY data_inicio DESC LIMIT 1",
+    [new Date()],
   );
   const linha = (rows as { id: string; atualizado_em: Date }[])[0];
   if (!linha) return null;
-  return { id: linha.id, atualizadoEm: new Date(linha.atualizado_em).toISOString() };
+  return {
+    id: linha.id,
+    atualizadoEm: new Date(linha.atualizado_em).toISOString(),
+  };
 }
 
-/** Busca a pelada "em aberto": aquela cujo diaEvento ainda não passou. */
-export async function buscarPeladaAberta(): Promise<Pelada | null> {
-  // Comparamos com um timestamp calculado aqui no Node (em vez de usar
-  // NOW() do MySQL) para eliminar qualquer divergência de fuso horário
-  // entre o processo da aplicação e o servidor de banco de dados.
+/**
+ * Busca a pelada "atual": a mais recente que foi aberta e cujo evento ainda
+ * não terminou (agora < dataFim) - pode estar com inscrições abertas,
+ * aguardando o dia do jogo, ou com o jogo rolando agora. Assim que o
+ * horário de término passa, some daqui (e some do dashboard/gols também).
+ */
+export async function buscarPeladaAtual(): Promise<Pelada | null> {
   const [rows] = await pool.execute(
-    "SELECT * FROM peladas WHERE dia_evento > ? ORDER BY dia_evento ASC LIMIT 1",
-    [new Date()]
+    "SELECT * FROM peladas WHERE data_fim > ? ORDER BY data_inicio DESC LIMIT 1",
+    [new Date()],
   );
   const linhas = rows as LinhaPelada[];
   if (!linhas[0]) return null;
+
   return montarPelada(linhas[0]);
 }
 
+/**
+ * true se existe uma pelada cujo jogo ainda não aconteceu - usado para
+ * impedir abrir uma lista nova enquanto a anterior ainda está pendente.
+ * Diferente de buscarPeladaAtual: aqui SIM filtramos por data, porque essa
+ * checagem é especificamente "ainda tem jogo pra acontecer?".
+ */
+export async function existePeladaPendente(): Promise<boolean> {
+  const [rows] = await pool.execute(
+    "SELECT id FROM peladas WHERE dia_evento > ? LIMIT 1",
+    [new Date()],
+  );
+  return (rows as unknown[]).length > 0;
+}
+
 export async function buscarPeladaPorId(id: string): Promise<Pelada | null> {
-  const [rows] = await pool.execute("SELECT * FROM peladas WHERE id = ? LIMIT 1", [
-    id,
-  ]);
+  const [rows] = await pool.execute(
+    "SELECT * FROM peladas WHERE id = ? LIMIT 1",
+    [id],
+  );
   const linhas = rows as LinhaPelada[];
   if (!linhas[0]) return null;
   return montarPelada(linhas[0]);
@@ -111,26 +137,28 @@ export async function buscarPeladaPorId(id: string): Promise<Pelada | null> {
 
 export async function abrirPelada(
   responsavelId: string,
-  datasEscolhidas?: Partial<DatasPelada>
+  datasEscolhidas?: Partial<DatasPelada>,
 ): Promise<Pelada> {
   const padrao = calcularDatasPelada();
   const dataInicio = datasEscolhidas?.dataInicio ?? padrao.dataInicio;
   const diaEvento = datasEscolhidas?.diaEvento ?? padrao.diaEvento;
   const dataTermino = datasEscolhidas?.dataTermino ?? padrao.dataTermino;
+  const dataFim = datasEscolhidas?.dataFim ?? padrao.dataFim;
 
   const id = randomUUID();
   const agora = new Date();
   await pool.execute(
-    `INSERT INTO peladas (id, data_inicio, dia_evento, data_termino, responsavel_id, atualizado_em)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO peladas (id, data_inicio, dia_evento, data_termino, data_fim, responsavel_id, atualizado_em)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       new Date(dataInicio),
       new Date(diaEvento),
       new Date(dataTermino),
+      new Date(dataFim),
       responsavelId,
       agora,
-    ]
+    ],
   );
   return (await buscarPeladaPorId(id))!;
 }
@@ -144,7 +172,7 @@ export async function inscreverNaPelada(
   peladaId: string,
   pessoaId: string,
   posicaoEscolhida: Posicao,
-  deviceId: string
+  deviceId: string,
 ): Promise<{ resultado: ResultadoInscricao; pelada: Pelada }> {
   const conn = await pool.getConnection();
   try {
@@ -154,7 +182,7 @@ export async function inscreverNaPelada(
     // que duas inscrições concorrentes leiam a mesma contagem de vagas.
     const [peladaRows] = await conn.execute(
       "SELECT * FROM peladas WHERE id = ? FOR UPDATE",
-      [peladaId]
+      [peladaId],
     );
     const pelada = (peladaRows as LinhaPelada[])[0];
     if (!pelada) throw new Error("Lista não encontrada.");
@@ -169,7 +197,7 @@ export async function inscreverNaPelada(
 
     const [existentesPessoa] = await conn.execute(
       "SELECT id FROM inscricoes WHERE pelada_id = ? AND pessoa_id = ? LIMIT 1",
-      [peladaId, pessoaId]
+      [peladaId, pessoaId],
     );
     if ((existentesPessoa as unknown[]).length) {
       throw new Error("Você já está inscrito nessa lista.");
@@ -177,21 +205,22 @@ export async function inscreverNaPelada(
 
     const [existentesDevice] = await conn.execute(
       "SELECT id FROM inscricoes WHERE pelada_id = ? AND device_id = ? LIMIT 1",
-      [peladaId, deviceId]
+      [peladaId, deviceId],
     );
     if ((existentesDevice as unknown[]).length) {
       throw new Error(
-        "Já existe uma inscrição nessa lista feita a partir desse aparelho."
+        "Já existe uma inscrição nessa lista feita a partir desse aparelho.",
       );
     }
 
     const statusPrincipal: StatusInscricao =
       posicaoEscolhida === "goleiro" ? "goleiro" : "jogador";
-    const limite = posicaoEscolhida === "goleiro" ? LIMITE_GOLEIROS : LIMITE_JOGADORES;
+    const limite =
+      posicaoEscolhida === "goleiro" ? LIMITE_GOLEIROS : LIMITE_JOGADORES;
 
     const [contagemRows] = await conn.execute(
       "SELECT COUNT(*) as total FROM inscricoes WHERE pelada_id = ? AND status = ?",
-      [peladaId, statusPrincipal]
+      [peladaId, statusPrincipal],
     );
     const total = Number((contagemRows as { total: number }[])[0].total);
 
@@ -207,7 +236,7 @@ export async function inscreverNaPelada(
     await conn.execute(
       `INSERT INTO inscricoes (id, pelada_id, pessoa_id, status, posicao_suplente, device_id)
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, peladaId, pessoaId, statusFinal, posicaoSuplente, deviceId]
+      [id, peladaId, pessoaId, statusFinal, posicaoSuplente, deviceId],
     );
 
     // Marca a pelada como alterada agora - é isso que o polling leve do
@@ -251,7 +280,7 @@ export interface ResultadoSaida {
  */
 export async function sairDaPelada(
   peladaId: string,
-  pessoaId: string
+  pessoaId: string,
 ): Promise<{ resultado: ResultadoSaida; pelada: Pelada }> {
   const conn = await pool.getConnection();
   try {
@@ -259,7 +288,7 @@ export async function sairDaPelada(
 
     const [inscricaoRows] = await conn.execute(
       "SELECT * FROM inscricoes WHERE pelada_id = ? AND pessoa_id = ? LIMIT 1 FOR UPDATE",
-      [peladaId, pessoaId]
+      [peladaId, pessoaId],
     );
     const inscricao = (inscricaoRows as LinhaInscricao[])[0];
     if (!inscricao) throw new Error("Você não está inscrito nessa lista.");
@@ -273,14 +302,14 @@ export async function sairDaPelada(
         `SELECT * FROM inscricoes
          WHERE pelada_id = ? AND status = 'suplente' AND posicao_suplente = ?
          ORDER BY criado_em ASC LIMIT 1 FOR UPDATE`,
-        [peladaId, inscricao.status]
+        [peladaId, inscricao.status],
       );
       const suplente = (suplentesRows as LinhaInscricao[])[0];
 
       if (suplente) {
         await conn.execute(
           "UPDATE inscricoes SET status = ?, posicao_suplente = NULL WHERE id = ?",
-          [inscricao.status, suplente.id]
+          [inscricao.status, suplente.id],
         );
         promovidoPessoaId = suplente.pessoa_id;
       }
@@ -299,7 +328,9 @@ export async function sairDaPelada(
     return {
       resultado: {
         saiuDe: inscricao.status,
-        promovido: promovidoPessoaId ? { pessoaId: promovidoPessoaId } : undefined,
+        promovido: promovidoPessoaId
+          ? { pessoaId: promovidoPessoaId }
+          : undefined,
       },
       pelada: peladaAtualizada!,
     };

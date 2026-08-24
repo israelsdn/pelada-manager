@@ -27,6 +27,7 @@ export interface Pelada {
   dataInicio: string; // ISO - sábado 19h (abertura)
   diaEvento: string; // ISO - segunda 20h30 (dia do jogo)
   dataTermino: string; // ISO - segunda 19h (fim das inscrições)
+  dataFim: string; // ISO - horário em que o evento termina
   responsavelId: string;
   atualizadoEm: string; // usado para o polling leve de "mudou algo?"
   listaGoleiros: ItemLista[];

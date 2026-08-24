@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { buscarVersaoPeladaAberta } from "@/lib/pelada-service";
+import { buscarVersaoPeladaAtual } from "@/lib/pelada-service";
 
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -10,13 +10,13 @@ export async function GET() {
   }
 
   try {
-    const versao = await buscarVersaoPeladaAberta();
+    const versao = await buscarVersaoPeladaAtual();
     return NextResponse.json({ versao });
   } catch (error) {
     console.error("[lista/versao] erro:", error);
     return NextResponse.json(
       { message: "Não foi possível verificar a lista." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

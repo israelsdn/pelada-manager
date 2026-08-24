@@ -12,16 +12,27 @@ interface AbrirListaFormProps {
     dataInicio: string;
     diaEvento: string;
     dataTermino: string;
+    dataFim: string;
   }) => void;
   carregando: boolean;
 }
 
-export default function AbrirListaForm({ onConfirmar, carregando }: AbrirListaFormProps) {
+export default function AbrirListaForm({
+  onConfirmar,
+  carregando,
+}: AbrirListaFormProps) {
   const padrao = calcularDatasPelada();
   const [aberto, setAberto] = useState(false);
-  const [dataInicio, setDataInicio] = useState(paraDatetimeLocal(padrao.dataInicio));
-  const [diaEvento, setDiaEvento] = useState(paraDatetimeLocal(padrao.diaEvento));
-  const [dataTermino, setDataTermino] = useState(paraDatetimeLocal(padrao.dataTermino));
+  const [dataInicio, setDataInicio] = useState(
+    paraDatetimeLocal(padrao.dataInicio),
+  );
+  const [diaEvento, setDiaEvento] = useState(
+    paraDatetimeLocal(padrao.diaEvento),
+  );
+  const [dataTermino, setDataTermino] = useState(
+    paraDatetimeLocal(padrao.dataTermino),
+  );
+  const [dataFim, setDataFim] = useState(paraDatetimeLocal(padrao.dataFim));
 
   if (!aberto) {
     return (
@@ -53,7 +64,9 @@ export default function AbrirListaForm({ onConfirmar, carregando }: AbrirListaFo
       </div>
 
       <div>
-        <label className="mb-1 block text-xs text-chalk-muted">Dia da pelada</label>
+        <label className="mb-1 block text-xs text-chalk-muted">
+          Dia da pelada
+        </label>
         <input
           type="datetime-local"
           value={diaEvento}
@@ -74,6 +87,22 @@ export default function AbrirListaForm({ onConfirmar, carregando }: AbrirListaFo
         />
       </div>
 
+      <div>
+        <label className="mb-1 block text-xs text-chalk-muted">
+          Fim do evento
+        </label>
+        <input
+          type="datetime-local"
+          value={dataFim}
+          onChange={(e) => setDataFim(e.target.value)}
+          className="w-full rounded-md border border-pitch-line bg-pitch-surface px-3 py-2 font-mono text-sm text-chalk focus:border-grass focus:outline-none"
+        />
+        <p className="mt-1 text-[11px] text-chalk-muted">
+          Até esse horário a lista continua aparecendo no dashboard e dá pra
+          registrar gols. Depois disso, some da tela.
+        </p>
+      </div>
+
       <div className="flex gap-3">
         <button
           onClick={() => setAberto(false)}
@@ -88,6 +117,7 @@ export default function AbrirListaForm({ onConfirmar, carregando }: AbrirListaFo
               dataInicio: deDatetimeLocal(dataInicio),
               diaEvento: deDatetimeLocal(diaEvento),
               dataTermino: deDatetimeLocal(dataTermino),
+              dataFim: deDatetimeLocal(dataFim),
             })
           }
           disabled={carregando}
