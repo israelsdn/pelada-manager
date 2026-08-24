@@ -6,7 +6,7 @@ import { onlyDigits } from "@/lib/phone";
 export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
-    maxAge: 60 * 5, // 5 minutos - expirado isso, precisa logar novamente
+    maxAge: 60 * 120, // 5 minutos - expirado isso, precisa logar novamente
   },
   jwt: {
     maxAge: 60 * 5,
