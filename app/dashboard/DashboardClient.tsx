@@ -8,7 +8,13 @@ import Countdown from "@/components/Countdown";
 import JerseySlot from "@/components/JerseySlot";
 import Logo from "@/components/Logo";
 import AbrirListaForm from "@/components/AbrirListaForm";
-import { LIMITE_GOLEIROS, LIMITE_JOGADORES, Pelada, Posicao, SessaoUsuario } from "@/types";
+import {
+  LIMITE_GOLEIROS,
+  LIMITE_JOGADORES,
+  Pelada,
+  Posicao,
+  SessaoUsuario,
+} from "@/types";
 
 const fetcher = (url: string) =>
   fetch(url).then((res) => {
@@ -44,7 +50,7 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
   const { data: versaoData } = useSWR<{ versao: VersaoPelada | null }>(
     "/api/lista/versao",
     fetcher,
-    { refreshInterval: 8000, revalidateOnFocus: true }
+    { refreshInterval: 8000, revalidateOnFocus: true },
   );
 
   const ultimaVersaoVista = useRef<string | null>(null);
@@ -53,7 +59,10 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
     const chave = versaoData.versao
       ? `${versaoData.versao.id}:${versaoData.versao.atualizadoEm}`
       : "nenhuma";
-    if (ultimaVersaoVista.current !== null && ultimaVersaoVista.current !== chave) {
+    if (
+      ultimaVersaoVista.current !== null &&
+      ultimaVersaoVista.current !== chave
+    ) {
       mutate();
     }
     ultimaVersaoVista.current = chave;
@@ -70,21 +79,26 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
   const [inscrevendo, setInscrevendo] = useState<Posicao | null>(null);
   const [abrindo, setAbrindo] = useState(false);
   const [saindo, setSaindo] = useState(false);
-  const [mensagem, setMensagem] = useState<{ tipo: "erro" | "sucesso"; texto: string } | null>(
-    null
-  );
+  const [mensagem, setMensagem] = useState<{
+    tipo: "erro" | "sucesso";
+    texto: string;
+  } | null>(null);
 
   const pelada = data?.pelada ?? null;
-  const antesDoInicio = pelada ? new Date(pelada.dataInicio).getTime() > agora : false;
+  const antesDoInicio = pelada
+    ? new Date(pelada.dataInicio).getTime() > agora
+    : false;
   const inscricoesAbertas = pelada
     ? new Date(pelada.dataInicio).getTime() <= agora &&
       new Date(pelada.dataTermino).getTime() > agora
     : false;
 
   const jaInscrito = pelada
-    ? [...pelada.listaGoleiros, ...pelada.listaJogadores, ...pelada.listaSuplentes].some(
-        (item) => item.pessoaId === usuario.id
-      )
+    ? [
+        ...pelada.listaGoleiros,
+        ...pelada.listaJogadores,
+        ...pelada.listaSuplentes,
+      ].some((item) => item.pessoaId === usuario.id)
     : false;
 
   async function abrirLista(datas: {
@@ -105,10 +119,16 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
         setMensagem({ tipo: "erro", texto: json.message });
         return;
       }
-      setMensagem({ tipo: "sucesso", texto: "Lista aberta! Bora chamar a galera." });
+      setMensagem({
+        tipo: "sucesso",
+        texto: "Lista aberta! Bora chamar a galera.",
+      });
       mutate();
     } catch {
-      setMensagem({ tipo: "erro", texto: "Falha de conexão ao abrir a lista." });
+      setMensagem({
+        tipo: "erro",
+        texto: "Falha de conexão ao abrir a lista.",
+      });
     } finally {
       setAbrindo(false);
     }
@@ -156,7 +176,10 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
       setMensagem({ tipo: "sucesso", texto: json.message });
       mutate();
     } catch {
-      setMensagem({ tipo: "erro", texto: "Falha de conexão ao sair da lista." });
+      setMensagem({
+        tipo: "erro",
+        texto: "Falha de conexão ao sair da lista.",
+      });
     } finally {
       setSaindo(false);
     }
@@ -168,7 +191,9 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
         <div className="flex items-center gap-3">
           <Logo className="h-10 w-10" />
           <div>
-            <p className="text-xs uppercase tracking-widest text-chalk-muted">E aí,</p>
+            <p className="text-xs uppercase tracking-widest text-chalk-muted">
+              E aí,
+            </p>
             <h1 className="font-display text-3xl tracking-wide text-chalk">
               {usuario.apelido}
             </h1>
@@ -203,6 +228,14 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
             Usuários
           </Link>
         )}
+        {usuario.administrador && (
+          <Link
+            href="/gols"
+            className="rounded-md border border-card-yellow/40 px-3 py-1.5 text-xs text-card-yellow hover:bg-card-yellow/10"
+          >
+            Gols
+          </Link>
+        )}
       </nav>
 
       {mensagem && (
@@ -229,7 +262,9 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
 
       {!isLoading && !pelada && (
         <div className="rounded-lg border border-dashed border-pitch-line bg-pitch-surface p-8 text-center">
-          <p className="font-display text-2xl text-chalk">Nenhuma lista em aberto</p>
+          <p className="font-display text-2xl text-chalk">
+            Nenhuma lista em aberto
+          </p>
           <p className="mt-2 text-sm text-chalk-muted">
             {usuario.administrador
               ? "Abra a lista para começar a chamar a galera para a próxima segunda."
@@ -245,9 +280,15 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
         <div className="space-y-8">
           <section className="rounded-lg border border-pitch-line bg-pitch-surface p-6">
             {antesDoInicio ? (
-              <Countdown targetIso={pelada.dataInicio} label="Inscrições abrem em" />
+              <Countdown
+                targetIso={pelada.dataInicio}
+                label="Inscrições abrem em"
+              />
             ) : (
-              <Countdown targetIso={pelada.dataTermino} label="Fecha a lista em" />
+              <Countdown
+                targetIso={pelada.dataTermino}
+                label="Fecha a lista em"
+              />
             )}
             <p className="mt-4 text-center text-xs text-chalk-muted">
               Bola rolando segunda, {formatarDataHora(pelada.diaEvento)}
