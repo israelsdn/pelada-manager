@@ -38,7 +38,11 @@ function formatarDataHora(iso: string) {
   });
 }
 
-export default function VotacaoClient() {
+export default function VotacaoClient({
+  administrador,
+}: {
+  administrador: boolean;
+}) {
   const { data: listaData, isLoading: carregandoLista } = useSWR<{
     pelada: Pelada | null;
   }>("/api/lista", fetcher);
@@ -166,12 +170,14 @@ export default function VotacaoClient() {
           </h1>
         </div>
         <div className="flex gap-2">
-          <Link
-            href="/notas"
-            className="rounded-md border border-card-yellow/40 px-3 py-2 text-sm text-card-yellow hover:bg-card-yellow/10"
-          >
-            Notas
-          </Link>
+          {administrador && (
+            <Link
+              href="/notas"
+              className="rounded-md border border-card-yellow/40 px-3 py-2 text-sm text-card-yellow hover:bg-card-yellow/10"
+            >
+              Notas
+            </Link>
+          )}
           <Link
             href="/dashboard"
             className="rounded-md border border-pitch-line px-3 py-2 text-sm text-chalk-muted hover:text-chalk"

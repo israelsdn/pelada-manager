@@ -9,12 +9,6 @@ export async function GET(req: NextRequest) {
   if (!session) {
     return NextResponse.json({ message: "Não autenticado." }, { status: 401 });
   }
-  if (!session.user.administrador) {
-    return NextResponse.json(
-      { message: "Apenas administradores podem ver a votação." },
-      { status: 403 },
-    );
-  }
 
   const peladaId = req.nextUrl.searchParams.get("peladaId");
   if (!peladaId) {
@@ -37,12 +31,6 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ message: "Não autenticado." }, { status: 401 });
-  }
-  if (!session.user.administrador) {
-    return NextResponse.json(
-      { message: "Apenas administradores podem votar." },
-      { status: 403 },
-    );
   }
 
   try {

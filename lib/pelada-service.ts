@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import { pool } from "@/lib/db";
 import { calcularDatasPelada, DatasPelada } from "@/lib/date-utils";
+import { buscarPessoaPorId } from "@/lib/pessoa-service";
 import {
   ItemLista,
   LIMITE_GOLEIROS,
@@ -291,7 +292,7 @@ export async function sairDaPelada(
       [peladaId, pessoaId],
     );
     const inscricao = (inscricaoRows as LinhaInscricao[])[0];
-    if (!inscricao) throw new Error("Você não está inscrito nessa lista.");
+    if (!inscricao) throw new Error("Essa pessoa não está inscrita nessa lista.");
 
     await conn.execute("DELETE FROM inscricoes WHERE id = ?", [inscricao.id]);
 
@@ -331,6 +332,88 @@ export async function sairDaPelada(
         promovido: promovidoPessoaId
           ? { pessoaId: promovidoPessoaId }
           : undefined,
+      },
+      pelada: peladaAtualizada!,
+    };
+  } catch (erro) {
+    await conn.rollback();
+    throw erro;
+  } finally {
+    conn.release();
+  }
+}
+
+/**
+ * Admin coloca alguém numa vaga de goleiro/jogador. Não usa a janela de
+ * inscrição nem o antifraude de aparelho, e não joga para suplente — só
+ * entra se ainda houver vaga na posição pedida.
+ */
+export async function inscreverPorAdmin(
+  peladaId: string,
+  pessoaId: string,
+  posicaoEscolhida: Posicao,
+): Promise<{ resultado: ResultadoInscricao; pelada: Pelada }> {
+  const pessoa = await buscarPessoaPorId(pessoaId);
+  if (!pessoa) throw new Error("Jogador não encontrado.");
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [peladaRows] = await conn.execute(
+      "SELECT * FROM peladas WHERE id = ? FOR UPDATE",
+      [peladaId],
+    );
+    const pelada = (peladaRows as LinhaPelada[])[0];
+    if (!pelada) throw new Error("Lista não encontrada.");
+
+    if (new Date(pelada.data_fim).getTime() < Date.now()) {
+      throw new Error("Essa pelada já encerrou.");
+    }
+
+    const [existentesPessoa] = await conn.execute(
+      "SELECT id FROM inscricoes WHERE pelada_id = ? AND pessoa_id = ? LIMIT 1",
+      [peladaId, pessoaId],
+    );
+    if ((existentesPessoa as unknown[]).length) {
+      throw new Error(`${pessoa.apelido} já está nessa lista.`);
+    }
+
+    const statusPrincipal: StatusInscricao =
+      posicaoEscolhida === "goleiro" ? "goleiro" : "jogador";
+    const limite =
+      posicaoEscolhida === "goleiro" ? LIMITE_GOLEIROS : LIMITE_JOGADORES;
+
+    const [contagemRows] = await conn.execute(
+      "SELECT COUNT(*) as total FROM inscricoes WHERE pelada_id = ? AND status = ?",
+      [peladaId, statusPrincipal],
+    );
+    const total = Number((contagemRows as { total: number }[])[0].total);
+    if (total >= limite) {
+      throw new Error(
+        `A lista de ${posicaoEscolhida === "goleiro" ? "goleiros" : "jogadores"} está cheia.`,
+      );
+    }
+
+    const id = randomUUID();
+    await conn.execute(
+      `INSERT INTO inscricoes (id, pelada_id, pessoa_id, status, posicao_suplente, device_id)
+       VALUES (?, ?, ?, ?, NULL, ?)`,
+      [id, peladaId, pessoaId, statusPrincipal, randomUUID()],
+    );
+
+    await conn.execute("UPDATE peladas SET atualizado_em = ? WHERE id = ?", [
+      new Date(),
+      peladaId,
+    ]);
+
+    await conn.commit();
+
+    const peladaAtualizada = await buscarPeladaPorId(peladaId);
+    return {
+      resultado: {
+        destino:
+          statusPrincipal === "goleiro" ? "listaGoleiros" : "listaJogadores",
       },
       pelada: peladaAtualizada!,
     };

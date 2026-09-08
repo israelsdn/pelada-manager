@@ -8,7 +8,9 @@ import Countdown from "@/components/Countdown";
 import JerseySlot from "@/components/JerseySlot";
 import Logo from "@/components/Logo";
 import AbrirListaForm from "@/components/AbrirListaForm";
+import AdicionarNaListaModal from "@/components/AdicionarNaListaModal";
 import {
+  ItemLista,
   LIMITE_GOLEIROS,
   LIMITE_JOGADORES,
   Pelada,
@@ -79,6 +81,11 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
   const [inscrevendo, setInscrevendo] = useState<Posicao | null>(null);
   const [abrindo, setAbrindo] = useState(false);
   const [saindo, setSaindo] = useState(false);
+  const [adicionandoPosicao, setAdicionandoPosicao] = useState<Posicao | null>(
+    null,
+  );
+  const [adicionando, setAdicionando] = useState(false);
+  const [removendoId, setRemovendoId] = useState<string | null>(null);
   const [mensagem, setMensagem] = useState<{
     tipo: "erro" | "sucesso";
     texto: string;
@@ -159,6 +166,70 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
     }
   }
 
+  async function adicionarNaLista(pessoaId: string) {
+    if (!pelada || !adicionandoPosicao) return;
+    setAdicionando(true);
+    setMensagem(null);
+    try {
+      const res = await fetch("/api/lista/admin/adicionar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          peladaId: pelada.id,
+          pessoaId,
+          posicao: adicionandoPosicao,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMensagem({ tipo: "erro", texto: json.message });
+        return;
+      }
+      setMensagem({ tipo: "sucesso", texto: json.message });
+      setAdicionandoPosicao(null);
+      mutate();
+    } catch {
+      setMensagem({
+        tipo: "erro",
+        texto: "Falha de conexão ao adicionar o jogador.",
+      });
+    } finally {
+      setAdicionando(false);
+    }
+  }
+
+  async function removerDaLista(item: ItemLista) {
+    if (!pelada) return;
+    if (!confirm(`Remover ${item.apelido} da lista?`)) return;
+
+    setRemovendoId(item.pessoaId);
+    setMensagem(null);
+    try {
+      const res = await fetch("/api/lista/admin/remover", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          peladaId: pelada.id,
+          pessoaId: item.pessoaId,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setMensagem({ tipo: "erro", texto: json.message });
+        return;
+      }
+      setMensagem({ tipo: "sucesso", texto: json.message });
+      mutate();
+    } catch {
+      setMensagem({
+        tipo: "erro",
+        texto: "Falha de conexão ao remover o jogador.",
+      });
+    } finally {
+      setRemovendoId(null);
+    }
+  }
+
   async function sairDaLista() {
     if (!pelada) return;
     setSaindo(true);
@@ -221,6 +292,12 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
         >
           Ranking
         </Link>
+        <Link
+          href="/votacao"
+          className="rounded-md border border-pitch-line px-3 py-1.5 text-xs text-chalk-muted hover:text-chalk"
+        >
+          Votação
+        </Link>
         {usuario.administrador && (
           <Link
             href="/usuarios"
@@ -243,14 +320,6 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
             className="rounded-md border border-card-yellow/40 px-3 py-1.5 text-xs text-card-yellow hover:bg-card-yellow/10"
           >
             Notas
-          </Link>
-        )}
-        {usuario.administrador && (
-          <Link
-            href="/votacao"
-            className="rounded-md border border-card-yellow/40 px-3 py-1.5 text-xs text-card-yellow hover:bg-card-yellow/10"
-          >
-            Votação
           </Link>
         )}
       </nav>
@@ -371,6 +440,19 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
                     numero={i + 1}
                     apelido={item?.apelido}
                     destaque={item?.pessoaId === usuario.id}
+                    onVagoClick={
+                      usuario.administrador && !item
+                        ? () => setAdicionandoPosicao("goleiro")
+                        : undefined
+                    }
+                    onRemover={
+                      usuario.administrador && item
+                        ? () => removerDaLista(item)
+                        : undefined
+                    }
+                    removendo={
+                      item ? removendoId === item.pessoaId : false
+                    }
                   />
                 );
               })}
@@ -390,6 +472,19 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
                     numero={i + 1}
                     apelido={item?.apelido}
                     destaque={item?.pessoaId === usuario.id}
+                    onVagoClick={
+                      usuario.administrador && !item
+                        ? () => setAdicionandoPosicao("jogador")
+                        : undefined
+                    }
+                    onRemover={
+                      usuario.administrador && item
+                        ? () => removerDaLista(item)
+                        : undefined
+                    }
+                    removendo={
+                      item ? removendoId === item.pessoaId : false
+                    }
                   />
                 );
               })}
@@ -416,13 +511,41 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
                     >
                       {item.apelido ?? "Jogador"}
                     </span>
-                    <span className="text-xs uppercase tracking-wide text-chalk-muted">
-                      {item.posicao === "goleiro" ? "goleiro" : "jogador"}
+                    <span className="flex items-center gap-3">
+                      <span className="text-xs uppercase tracking-wide text-chalk-muted">
+                        {item.posicao === "goleiro" ? "goleiro" : "jogador"}
+                      </span>
+                      {usuario.administrador && (
+                        <button
+                          type="button"
+                          onClick={() => removerDaLista(item)}
+                          disabled={removendoId === item.pessoaId}
+                          className="text-xs text-card-red hover:underline disabled:opacity-60"
+                        >
+                          {removendoId === item.pessoaId
+                            ? "Removendo..."
+                            : "Remover"}
+                        </button>
+                      )}
                     </span>
                   </li>
                 ))}
               </ul>
             </section>
+          )}
+
+          {usuario.administrador && adicionandoPosicao && (
+            <AdicionarNaListaModal
+              posicao={adicionandoPosicao}
+              idsNaLista={[
+                ...pelada.listaGoleiros,
+                ...pelada.listaJogadores,
+                ...pelada.listaSuplentes,
+              ].map((item) => item.pessoaId)}
+              enviando={adicionando}
+              onFechar={() => setAdicionandoPosicao(null)}
+              onEscolher={adicionarNaLista}
+            />
           )}
         </div>
       )}

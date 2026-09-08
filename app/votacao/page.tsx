@@ -6,7 +6,6 @@ import VotacaoClient from "@/app/votacao/VotacaoClient";
 export default async function VotacaoPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
-  if (!session.user.administrador) redirect("/dashboard");
 
-  return <VotacaoClient />;
+  return <VotacaoClient administrador={session.user.administrador} />;
 }
