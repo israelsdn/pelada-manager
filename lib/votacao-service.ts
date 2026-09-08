@@ -64,7 +64,7 @@ export async function listarVotosDoAdmin(
   }));
 }
 
-const DESVIO_MAXIMO_NOTA = 2.5;
+const DESVIO_MAXIMO_NOTA = 2;
 
 function mediaDasNotas(notas: number[]): number {
   return notas.reduce((soma, nota) => soma + nota, 0) / notas.length;
