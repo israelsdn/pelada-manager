@@ -18,6 +18,7 @@ export async function GET() {
       foto: p.foto ?? null,
       gols: p.gols,
       assistencias: p.assistencias,
+      superclassicos: p.superclassicos,
     }));
     return NextResponse.json({ ranking });
   } catch (error) {

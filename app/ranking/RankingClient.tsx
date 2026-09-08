@@ -11,6 +11,7 @@ interface LinhaRanking {
   foto?: string | null;
   gols: number;
   assistencias: number;
+  superclassicos: number;
 }
 
 const fetcher = (url: string) =>
@@ -66,18 +67,19 @@ export default function RankingClient() {
       {ranking.length > 0 && (
         <section className="overflow-hidden rounded-lg border border-pitch-line bg-pitch-surface">
           {/* Cabeçalho */}
-          <div className="grid grid-cols-[56px_1fr_72px_90px] items-center border-b border-pitch-line px-4 py-3 text-xs uppercase tracking-widest text-chalk-muted">
+          <div className="grid grid-cols-[56px_1fr_56px_64px_48px] items-center border-b border-pitch-line px-4 py-3 text-xs uppercase tracking-widest text-chalk-muted">
             <span className="text-center">#</span>
             <span>Jogador</span>
             <span className="text-center">Gols</span>
             <span className="text-center">Assist.</span>
+            <span className="text-center">SC</span>
           </div>
 
           {/* Linhas */}
           {ranking.map((jogador, i) => (
             <div
               key={jogador.id}
-              className={`grid grid-cols-[56px_1fr_72px_90px] items-center px-4 py-4 ${
+              className={`grid grid-cols-[56px_1fr_56px_64px_48px] items-center px-4 py-4 ${
                 i !== ranking.length - 1 ? "border-b border-pitch-line" : ""
               }`}
             >
@@ -106,6 +108,10 @@ export default function RankingClient() {
               {/* Assistências */}
               <span className="text-center font-mono font-bold text-card-yellow">
                 {jogador.assistencias}
+              </span>
+
+              <span className="text-center font-mono font-bold text-chalk">
+                {jogador.superclassicos}
               </span>
             </div>
           ))}

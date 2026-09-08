@@ -113,9 +113,25 @@ export async function atualizarPessoa(
   return buscarPessoaPorId(id);
 }
 
-export async function rankingGolsAssistencias(): Promise<Pessoa[]> {
+export interface LinhaRanking extends Pessoa {
+  superclassicos: number;
+}
+
+export async function rankingGolsAssistencias(): Promise<LinhaRanking[]> {
   const [rows] = await pool.execute(
-    "SELECT * FROM pessoas ORDER BY gols DESC, assistencias DESC, apelido ASC"
+    `SELECT p.*, COALESCE(s.total, 0) AS superclassicos
+     FROM pessoas p
+     LEFT JOIN (
+       SELECT pessoa_id, COUNT(*) AS total
+       FROM superclassico_vencedores
+       GROUP BY pessoa_id
+     ) s ON s.pessoa_id = p.id
+     ORDER BY p.gols DESC, p.assistencias DESC, superclassicos DESC, p.apelido ASC`,
   );
-  return (rows as LinhaPessoa[]).map(linhaParaPessoa);
+  return (rows as (LinhaPessoa & { superclassicos: number | string })[]).map(
+    (row) => ({
+      ...linhaParaPessoa(row),
+      superclassicos: Number(row.superclassicos),
+    }),
+  );
 }
