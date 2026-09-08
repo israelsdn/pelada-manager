@@ -424,3 +424,17 @@ export async function inscreverPorAdmin(
     conn.release();
   }
 }
+
+export async function listarNomesCompletosDaPelada(
+  peladaId: string,
+): Promise<string[]> {
+  const [rows] = await pool.execute(
+    `SELECT p.nome_completo
+     FROM inscricoes i
+     JOIN pessoas p ON p.id = i.pessoa_id
+     WHERE i.pelada_id = ?
+     ORDER BY FIELD(i.status, 'goleiro', 'jogador', 'suplente'), i.criado_em ASC`,
+    [peladaId],
+  );
+  return (rows as { nome_completo: string }[]).map((row) => row.nome_completo);
+}

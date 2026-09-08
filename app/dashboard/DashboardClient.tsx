@@ -86,6 +86,7 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
   );
   const [adicionando, setAdicionando] = useState(false);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
+  const [copiandoNomes, setCopiandoNomes] = useState(false);
   const [mensagem, setMensagem] = useState<{
     tipo: "erro" | "sucesso";
     texto: string;
@@ -227,6 +228,40 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
       });
     } finally {
       setRemovendoId(null);
+    }
+  }
+
+  async function copiarNomesDaLista() {
+    if (!pelada) return;
+    setCopiandoNomes(true);
+    setMensagem(null);
+    try {
+      const res = await fetch(`/api/lista/nomes?peladaId=${pelada.id}`);
+      const json = await res.json();
+      if (!res.ok) {
+        setMensagem({ tipo: "erro", texto: json.message });
+        return;
+      }
+      const nomes = (json.nomes as string[]) ?? [];
+      if (!nomes.length) {
+        setMensagem({
+          tipo: "erro",
+          texto: "Ainda não tem ninguém na lista para copiar.",
+        });
+        return;
+      }
+      await navigator.clipboard.writeText(nomes.join("\n"));
+      setMensagem({
+        tipo: "sucesso",
+        texto: "Nomes copiados para a área de transferência.",
+      });
+    } catch {
+      setMensagem({
+        tipo: "erro",
+        texto: "Não foi possível copiar os nomes.",
+      });
+    } finally {
+      setCopiandoNomes(false);
     }
   }
 
@@ -423,6 +458,19 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
                 className="mt-3 rounded-md border border-card-red/40 px-4 py-2 text-sm text-card-red hover:bg-card-red/10 disabled:opacity-60"
               >
                 {saindo ? "Saindo..." : "Retirar minha presença"}
+              </button>
+            </div>
+          )}
+
+          {usuario.administrador && (
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={copiarNomesDaLista}
+                disabled={copiandoNomes}
+                className="rounded-md border border-card-yellow/40 px-4 py-2 text-sm text-card-yellow hover:bg-card-yellow/10 disabled:opacity-60"
+              >
+                {copiandoNomes ? "Copiando..." : "Copiar nomes da lista"}
               </button>
             </div>
           )}
