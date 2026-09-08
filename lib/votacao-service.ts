@@ -71,7 +71,7 @@ function mediaDasNotas(notas: number[]): number {
 }
 
 /**
- * Média bruta de todos os votos; depois descarta os que fogem 2.5
+ * Média bruta dos votos daquela pelada; depois descarta os que fogem 2.5
  * para baixo ou para cima e recalcula. Se todos forem outlier,
  * fica a média bruta.
  */
@@ -81,12 +81,9 @@ function mediaSemOutliers(notas: number[]): { media: number; usados: number } {
     (nota) => Math.abs(nota - bruta) < DESVIO_MAXIMO_NOTA,
   );
   if (!validas.length) {
-    return { media: Number(bruta.toFixed(1)), usados: notas.length };
+    return { media: bruta, usados: notas.length };
   }
-  return {
-    media: Number(mediaDasNotas(validas).toFixed(1)),
-    usados: validas.length,
-  };
+  return { media: mediaDasNotas(validas), usados: validas.length };
 }
 
 export async function listarNotasDoMes(
@@ -94,7 +91,7 @@ export async function listarNotasDoMes(
 ): Promise<NotaMensal[]> {
   const { inicio, fim } = inicioFimMesAtual(agora);
   const [rows] = await pool.execute(
-    `SELECT p.id AS pessoa_id, p.apelido, p.foto, v.nota
+    `SELECT p.id AS pessoa_id, p.apelido, p.foto, v.pelada_id, v.nota
      FROM votos v
      JOIN pessoas p ON p.id = v.votado_id
      JOIN peladas pl ON pl.id = v.pelada_id
@@ -104,27 +101,46 @@ export async function listarNotasDoMes(
 
   const porJogador = new Map<
     string,
-    { apelido: string; foto: string | null; notas: number[] }
+    {
+      apelido: string;
+      foto: string | null;
+      porPelada: Map<string, number[]>;
+    }
   >();
   for (const row of rows as {
     pessoa_id: string;
     apelido: string;
     foto: string | null;
+    pelada_id: string;
     nota: number | string;
   }[]) {
     const atual = porJogador.get(row.pessoa_id) ?? {
       apelido: row.apelido,
       foto: row.foto ?? null,
-      notas: [],
+      porPelada: new Map<string, number[]>(),
     };
-    atual.notas.push(Number(row.nota));
+    const notasDaPelada = atual.porPelada.get(row.pelada_id) ?? [];
+    notasDaPelada.push(Number(row.nota));
+    atual.porPelada.set(row.pelada_id, notasDaPelada);
     porJogador.set(row.pessoa_id, atual);
   }
 
   return [...porJogador.entries()]
-    .map(([pessoaId, { apelido, foto, notas }]) => {
-      const { media, usados } = mediaSemOutliers(notas);
-      return { pessoaId, apelido, foto, media, totalVotos: usados };
+    .map(([pessoaId, { apelido, foto, porPelada }]) => {
+      const mediasDasPeladas: number[] = [];
+      let votosUsados = 0;
+      for (const notas of porPelada.values()) {
+        const { media, usados } = mediaSemOutliers(notas);
+        mediasDasPeladas.push(media);
+        votosUsados += usados;
+      }
+      return {
+        pessoaId,
+        apelido,
+        foto,
+        media: Number(mediaDasNotas(mediasDasPeladas).toFixed(1)),
+        totalVotos: votosUsados,
+      };
     })
     .sort((a, b) => b.media - a.media || a.apelido.localeCompare(b.apelido));
 }
