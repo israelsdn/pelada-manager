@@ -64,36 +64,67 @@ export async function listarVotosDoAdmin(
   }));
 }
 
+const DESVIO_MAXIMO_NOTA = 2.5;
+
+function mediaDasNotas(notas: number[]): number {
+  return notas.reduce((soma, nota) => soma + nota, 0) / notas.length;
+}
+
+/**
+ * Média bruta de todos os votos; depois descarta os que fogem 2.5
+ * para baixo ou para cima e recalcula. Se todos forem outlier,
+ * fica a média bruta.
+ */
+function mediaSemOutliers(notas: number[]): { media: number; usados: number } {
+  const bruta = mediaDasNotas(notas);
+  const validas = notas.filter(
+    (nota) => Math.abs(nota - bruta) < DESVIO_MAXIMO_NOTA,
+  );
+  if (!validas.length) {
+    return { media: Number(bruta.toFixed(1)), usados: notas.length };
+  }
+  return {
+    media: Number(mediaDasNotas(validas).toFixed(1)),
+    usados: validas.length,
+  };
+}
+
 export async function listarNotasDoMes(
   agora: Date = new Date(),
 ): Promise<NotaMensal[]> {
   const { inicio, fim } = inicioFimMesAtual(agora);
   const [rows] = await pool.execute(
-    `SELECT p.id AS pessoa_id, p.apelido,
-            AVG(v.nota) AS media,
-            COUNT(v.id) AS total_votos
+    `SELECT p.id AS pessoa_id, p.apelido, v.nota
      FROM votos v
      JOIN pessoas p ON p.id = v.votado_id
      JOIN peladas pl ON pl.id = v.pelada_id
-     WHERE pl.dia_evento >= ? AND pl.dia_evento < ?
-     GROUP BY p.id, p.apelido
-     ORDER BY media DESC, p.apelido ASC`,
+     WHERE pl.dia_evento >= ? AND pl.dia_evento < ?`,
     [inicio, fim],
   );
 
-  return (
-    rows as {
-      pessoa_id: string;
-      apelido: string;
-      media: number | string;
-      total_votos: number | string;
-    }[]
-  ).map((row) => ({
-    pessoaId: row.pessoa_id,
-    apelido: row.apelido,
-    media: Number(Number(row.media).toFixed(1)),
-    totalVotos: Number(row.total_votos),
-  }));
+  const porJogador = new Map<
+    string,
+    { apelido: string; notas: number[] }
+  >();
+  for (const row of rows as {
+    pessoa_id: string;
+    apelido: string;
+    nota: number | string;
+  }[]) {
+    const atual = porJogador.get(row.pessoa_id) ?? {
+      apelido: row.apelido,
+      notas: [],
+    };
+    atual.notas.push(Number(row.nota));
+    porJogador.set(row.pessoa_id, atual);
+  }
+
+  return [...porJogador.entries()]
+    .map(([pessoaId, { apelido, notas }]) => {
+      const { media, usados } = mediaSemOutliers(notas);
+      return { pessoaId, apelido, media, totalVotos: usados };
+    })
+    .sort((a, b) => b.media - a.media || a.apelido.localeCompare(b.apelido));
 }
 
 /**
