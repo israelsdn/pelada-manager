@@ -6,5 +6,7 @@ export const config = {
     "/ranking/:path*",
     "/usuarios/:path*",
     "/gols/:path*",
+    "/votacao/:path*",
+    "/notas/:path*",
   ],
 };

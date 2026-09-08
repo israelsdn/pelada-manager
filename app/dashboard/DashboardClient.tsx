@@ -237,6 +237,22 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
             Gols
           </Link>
         )}
+        {usuario.administrador && (
+          <Link
+            href="/notas"
+            className="rounded-md border border-card-yellow/40 px-3 py-1.5 text-xs text-card-yellow hover:bg-card-yellow/10"
+          >
+            Notas
+          </Link>
+        )}
+        {usuario.administrador && (
+          <Link
+            href="/votacao"
+            className="rounded-md border border-card-yellow/40 px-3 py-1.5 text-xs text-card-yellow hover:bg-card-yellow/10"
+          >
+            Votação
+          </Link>
+        )}
       </nav>
 
       {mensagem && (

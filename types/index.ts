@@ -45,6 +45,19 @@ export interface Regras {
   atualizadoPorApelido?: string;
 }
 
+// ---- Votação de notas ----
+export interface Voto {
+  votadoId: string;
+  nota: number;
+}
+
+export interface NotaMensal {
+  pessoaId: string;
+  apelido: string;
+  media: number;
+  totalVotos: number;
+}
+
 // ---- Sessão NextAuth ----
 export interface SessaoUsuario {
   id: string;
