@@ -100,6 +100,9 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
     ? new Date(pelada.dataInicio).getTime() <= agora &&
       new Date(pelada.dataTermino).getTime() > agora
     : false;
+  const depoisDoEvento = pelada
+    ? new Date(pelada.diaEvento).getTime() <= agora
+    : false;
 
   const jaInscrito = pelada
     ? [
@@ -399,22 +402,24 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
 
       {pelada && (
         <div className="space-y-8">
-          <section className="rounded-lg border border-pitch-line bg-pitch-surface p-6">
-            {antesDoInicio ? (
-              <Countdown
-                targetIso={pelada.dataInicio}
-                label="Inscrições abrem em"
-              />
-            ) : (
-              <Countdown
-                targetIso={pelada.dataTermino}
-                label="Fecha a lista em"
-              />
-            )}
-            <p className="mt-4 text-center text-xs text-chalk-muted">
-              Bola rolando segunda, {formatarDataHora(pelada.diaEvento)}
-            </p>
-          </section>
+          {!depoisDoEvento && (
+            <section className="rounded-lg border border-pitch-line bg-pitch-surface p-6">
+              {antesDoInicio ? (
+                <Countdown
+                  targetIso={pelada.dataInicio}
+                  label="Inscrições abrem em"
+                />
+              ) : (
+                <Countdown
+                  targetIso={pelada.dataTermino}
+                  label="Fecha a lista em"
+                />
+              )}
+              <p className="mt-4 text-center text-xs text-chalk-muted">
+                Bola rolando segunda, {formatarDataHora(pelada.diaEvento)}
+              </p>
+            </section>
+          )}
 
           {antesDoInicio && (
             <p className="text-center text-sm text-chalk-muted">
@@ -447,7 +452,7 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
             </section>
           )}
 
-          {jaInscrito && (
+          {jaInscrito && !depoisDoEvento && (
             <div className="text-center">
               <p className="text-sm text-grass">
                 Você já está na lista dessa semana. Boa pelada! ⚽
