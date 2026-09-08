@@ -97,7 +97,7 @@ export async function listarNotasDoMes(
 }
 
 /**
- * Salva (ou atualiza) as notas de um admin para jogadores da pelada.
+ * Salva (ou atualiza) as notas de quem participou da pelada.
  * Só vale entre dia_evento e data_fim, e só para quem está na lista.
  */
 export async function registrarVotos(
@@ -149,6 +149,16 @@ export async function registrarVotos(
     if (new Date(peladaRow.data_fim).getTime() < Date.now()) {
       throw new Error(
         `O prazo de votação dessa pelada já encerrou (terminou às ${formatarDataHoraBR(peladaRow.data_fim)}).`,
+      );
+    }
+
+    const [votanteRows] = await conn.execute(
+      "SELECT id FROM inscricoes WHERE pelada_id = ? AND pessoa_id = ? LIMIT 1",
+      [peladaId, votanteId],
+    );
+    if (!(votanteRows as unknown[]).length) {
+      throw new Error(
+        "Só quem participou dessa pelada pode votar.",
       );
     }
 

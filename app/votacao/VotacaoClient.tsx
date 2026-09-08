@@ -40,8 +40,10 @@ function formatarDataHora(iso: string) {
 
 export default function VotacaoClient({
   administrador,
+  usuarioId,
 }: {
   administrador: boolean;
+  usuarioId: string;
 }) {
   const { data: listaData, isLoading: carregandoLista } = useSWR<{
     pelada: Pelada | null;
@@ -120,8 +122,10 @@ export default function VotacaoClient({
       ]).sort((a, b) => a.apelido.localeCompare(b.apelido))
     : [];
 
+  const participou = jogadores.some((jogador) => jogador.id === usuarioId);
+
   async function salvar() {
-    if (!pelada || !janela.aberta) return;
+    if (!pelada || !janela.aberta || !participou) return;
 
     const votos = Object.entries(notas).map(([votadoId, nota]) => ({
       votadoId,
@@ -223,6 +227,10 @@ export default function VotacaoClient({
           {jogadores.length === 0 ? (
             <p className="text-center text-sm text-chalk-muted">
               Ainda não há ninguém na lista desta pelada.
+            </p>
+          ) : !participou ? (
+            <p className="text-center text-sm text-chalk-muted">
+              Só quem estava na lista dessa pelada pode votar.
             </p>
           ) : (
             <section className="space-y-3">

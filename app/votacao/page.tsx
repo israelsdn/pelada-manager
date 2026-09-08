@@ -7,5 +7,10 @@ export default async function VotacaoPage() {
   const session = await getServerSession(authOptions);
   if (!session) redirect("/login");
 
-  return <VotacaoClient administrador={session.user.administrador} />;
+  return (
+    <VotacaoClient
+      administrador={session.user.administrador}
+      usuarioId={session.user.id}
+    />
+  );
 }
