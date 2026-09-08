@@ -119,10 +119,18 @@ export default function VotacaoClient({
           apelido: i.apelido,
           rotulo: `${i.apelido} (suplente)`,
         })),
-      ]).sort((a, b) => a.apelido.localeCompare(b.apelido))
+      ])
+        .filter((jogador) => jogador.id !== usuarioId)
+        .sort((a, b) => a.apelido.localeCompare(b.apelido))
     : [];
 
-  const participou = jogadores.some((jogador) => jogador.id === usuarioId);
+  const participou = pelada
+    ? [
+        ...pelada.listaGoleiros,
+        ...pelada.listaJogadores,
+        ...pelada.listaSuplentes,
+      ].some((item) => item.pessoaId === usuarioId)
+    : false;
 
   async function salvar() {
     if (!pelada || !janela.aberta || !participou) return;

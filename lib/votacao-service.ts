@@ -124,6 +124,9 @@ export async function registrarVotos(
   if (idsUnicos.size !== normalizados.length) {
     throw new Error("Há notas duplicadas para o mesmo jogador.");
   }
+  if (idsUnicos.has(votanteId)) {
+    throw new Error("Você não pode votar em si mesmo.");
+  }
 
   const conn = await pool.getConnection();
   try {
