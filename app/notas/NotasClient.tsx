@@ -3,6 +3,7 @@
 import useSWR from "swr";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import Avatar from "@/components/Avatar";
 import { NotaMensal } from "@/types";
 
 const fetcher = (url: string) =>
@@ -94,8 +95,15 @@ export default function NotasClient() {
               <span className="flex justify-center font-mono text-sm text-chalk-muted">
                 {MEDALHAS[i] ?? i + 1}
               </span>
-              <span className="truncate font-medium text-chalk">
-                {jogador.apelido}
+              <span className="flex min-w-0 items-center gap-2">
+                <Avatar
+                  src={jogador.foto}
+                  apelido={jogador.apelido}
+                  className="h-8 w-8 text-xs"
+                />
+                <span className="truncate font-medium text-chalk">
+                  {jogador.apelido}
+                </span>
               </span>
               <span
                 className={`text-center font-mono font-bold ${corMedia(jogador.media)}`}

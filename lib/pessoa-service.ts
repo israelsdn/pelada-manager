@@ -12,6 +12,7 @@ interface LinhaPessoa {
   administrador: number | boolean;
   gols: number;
   assistencias: number;
+  foto?: string | null;
 }
 
 function linhaParaPessoa(row: LinhaPessoa): Pessoa {
@@ -24,6 +25,7 @@ function linhaParaPessoa(row: LinhaPessoa): Pessoa {
     administrador: !!row.administrador,
     gols: Number(row.gols),
     assistencias: Number(row.assistencias),
+    foto: row.foto ?? null,
   };
 }
 
@@ -75,6 +77,7 @@ export interface AtualizacaoPessoa {
   administrador?: boolean;
   gols?: number;
   assistencias?: number;
+  foto?: string | null;
 }
 
 const MAPA_COLUNAS: Record<keyof AtualizacaoPessoa, string> = {
@@ -85,6 +88,7 @@ const MAPA_COLUNAS: Record<keyof AtualizacaoPessoa, string> = {
   administrador: "administrador",
   gols: "gols",
   assistencias: "assistencias",
+  foto: "foto",
 };
 
 export async function atualizarPessoa(

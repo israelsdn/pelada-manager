@@ -4,6 +4,7 @@ import { useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import Avatar from "@/components/Avatar";
 import PhoneInput from "@/components/PhoneInput";
 import { formatPhone, isValidPhone } from "@/lib/phone";
 import { Pessoa } from "@/types";
@@ -97,14 +98,23 @@ function LinhaLeitura({
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-pitch-line bg-pitch-surface p-4">
-      <div>
-        <p className="font-display text-lg tracking-wide text-chalk">{pessoa.apelido}</p>
-        <p className="text-xs text-chalk-muted">
-          {pessoa.nomeCompleto} · {formatPhone(pessoa.telefone)}
-        </p>
-        <p className="mt-1 text-xs text-chalk-muted">
-          ⚽ {pessoa.gols} gols · 🎯 {pessoa.assistencias} assist.
-        </p>
+      <div className="flex min-w-0 items-center gap-3">
+        <Avatar
+          src={pessoa.foto}
+          apelido={pessoa.apelido}
+          className="h-10 w-10 text-sm"
+        />
+        <div>
+          <p className="font-display text-lg tracking-wide text-chalk">
+            {pessoa.apelido}
+          </p>
+          <p className="text-xs text-chalk-muted">
+            {pessoa.nomeCompleto} · {formatPhone(pessoa.telefone)}
+          </p>
+          <p className="mt-1 text-xs text-chalk-muted">
+            ⚽ {pessoa.gols} gols · 🎯 {pessoa.assistencias} assist.
+          </p>
+        </div>
       </div>
       <div className="flex items-center gap-2">
         <Selo ativo={pessoa.ativo} rotuloAtivo="Ativo" rotuloInativo="Inativo" />

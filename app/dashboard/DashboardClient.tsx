@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 import Countdown from "@/components/Countdown";
 import JerseySlot from "@/components/JerseySlot";
 import Logo from "@/components/Logo";
+import Avatar from "@/components/Avatar";
 import AbrirListaForm from "@/components/AbrirListaForm";
 import AdicionarNaListaModal from "@/components/AdicionarNaListaModal";
 import {
@@ -319,6 +320,12 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
 
       <nav className="mb-8 flex flex-wrap gap-2">
         <Link
+          href="/perfil"
+          className="rounded-md border border-pitch-line px-3 py-1.5 text-xs text-chalk-muted hover:text-chalk"
+        >
+          Perfil
+        </Link>
+        <Link
           href="/regras"
           className="rounded-md border border-pitch-line px-3 py-1.5 text-xs text-chalk-muted hover:text-chalk"
         >
@@ -329,6 +336,12 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
           className="rounded-md border border-pitch-line px-3 py-1.5 text-xs text-chalk-muted hover:text-chalk"
         >
           Ranking
+        </Link>
+        <Link
+          href="/superclassico"
+          className="rounded-md border border-pitch-line px-3 py-1.5 text-xs text-chalk-muted hover:text-chalk"
+        >
+          Superclássico
         </Link>
         <Link
           href="/votacao"
@@ -492,6 +505,7 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
                     key={i}
                     numero={i + 1}
                     apelido={item?.apelido}
+                    foto={item?.foto}
                     destaque={item?.pessoaId === usuario.id}
                     onVagoClick={
                       usuario.administrador && !item
@@ -524,6 +538,7 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
                     key={i}
                     numero={i + 1}
                     apelido={item?.apelido}
+                    foto={item?.foto}
                     destaque={item?.pessoaId === usuario.id}
                     onVagoClick={
                       usuario.administrador && !item
@@ -555,14 +570,21 @@ export default function DashboardClient({ usuario }: DashboardClientProps) {
                     key={item.id ?? i}
                     className="flex items-center justify-between rounded-md bg-pitch-raised px-4 py-2 text-sm"
                   >
-                    <span
-                      className={
-                        item.pessoaId === usuario.id
-                          ? "font-semibold text-card-yellow"
-                          : "text-chalk"
-                      }
-                    >
-                      {item.apelido ?? "Jogador"}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Avatar
+                        src={item.foto}
+                        apelido={item.apelido}
+                        className="h-7 w-7 text-xs"
+                      />
+                      <span
+                        className={
+                          item.pessoaId === usuario.id
+                            ? "truncate font-semibold text-card-yellow"
+                            : "truncate text-chalk"
+                        }
+                      >
+                        {item.apelido ?? "Jogador"}
+                      </span>
                     </span>
                     <span className="flex items-center gap-3">
                       <span className="text-xs uppercase tracking-wide text-chalk-muted">

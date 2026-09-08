@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import Avatar from "@/components/Avatar";
 import { Pelada, Voto } from "@/types";
 
 const fetcher = (url: string) =>
@@ -18,6 +19,7 @@ interface JogadorVotacao {
   id: string;
   apelido: string;
   rotulo: string;
+  foto?: string | null;
 }
 
 function jogadoresUnicos(itens: JogadorVotacao[]): JogadorVotacao[] {
@@ -108,16 +110,19 @@ export default function VotacaoClient({
           id: i.pessoaId,
           apelido: i.apelido,
           rotulo: `${i.apelido} · goleiro`,
+          foto: i.foto,
         })),
         ...pelada.listaJogadores.map((i) => ({
           id: i.pessoaId,
           apelido: i.apelido,
           rotulo: i.apelido,
+          foto: i.foto,
         })),
         ...pelada.listaSuplentes.map((i) => ({
           id: i.pessoaId,
           apelido: i.apelido,
           rotulo: `${i.apelido} (suplente)`,
+          foto: i.foto,
         })),
       ])
         .filter((jogador) => jogador.id !== usuarioId)
@@ -248,7 +253,16 @@ export default function VotacaoClient({
                   className="rounded-lg border border-pitch-line bg-pitch-surface p-4"
                 >
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <p className="font-medium text-chalk">{jogador.rotulo}</p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <Avatar
+                        src={jogador.foto}
+                        apelido={jogador.apelido}
+                        className="h-8 w-8 text-xs"
+                      />
+                      <p className="truncate font-medium text-chalk">
+                        {jogador.rotulo}
+                      </p>
+                    </div>
                     <span className="font-mono text-sm text-card-yellow">
                       {notas[jogador.id] === undefined
                         ? "—"

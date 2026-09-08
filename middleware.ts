@@ -8,5 +8,7 @@ export const config = {
     "/gols/:path*",
     "/votacao/:path*",
     "/notas/:path*",
+    "/perfil/:path*",
+    "/superclassico/:path*",
   ],
 };

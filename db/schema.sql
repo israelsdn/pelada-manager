@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS pessoas (
   administrador  BOOLEAN      NOT NULL DEFAULT FALSE,
   gols           INT UNSIGNED NOT NULL DEFAULT 0,
   assistencias   INT UNSIGNED NOT NULL DEFAULT 0,
+  foto           TEXT         NULL, -- JPEG compactado em data URL (base64)
   criado_em      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   atualizado_em  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -74,6 +75,25 @@ CREATE TABLE IF NOT EXISTS votos (
   INDEX idx_votos_criado_em (criado_em)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Edições do Superclássico e quem ganhou em cada data.
+CREATE TABLE IF NOT EXISTS superclassicos (
+  id              CHAR(36) NOT NULL PRIMARY KEY,
+  data_conquista  DATE     NOT NULL,
+  criado_por      CHAR(36) NOT NULL,
+  criado_em       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_superclassicos_criador FOREIGN KEY (criado_por) REFERENCES pessoas(id),
+  INDEX idx_superclassicos_data (data_conquista)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS superclassico_vencedores (
+  id                 CHAR(36) NOT NULL PRIMARY KEY,
+  superclassico_id   CHAR(36) NOT NULL,
+  pessoa_id          CHAR(36) NOT NULL,
+  CONSTRAINT fk_sc_vencedores_edicao FOREIGN KEY (superclassico_id) REFERENCES superclassicos(id) ON DELETE CASCADE,
+  CONSTRAINT fk_sc_vencedores_pessoa FOREIGN KEY (pessoa_id) REFERENCES pessoas(id),
+  UNIQUE KEY uq_sc_vencedores_edicao_pessoa (superclassico_id, pessoa_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Linha inicial das regras, para a página não ficar vazia no primeiro acesso.
 INSERT IGNORE INTO regras (id, conteudo) VALUES (
   1,
@@ -104,6 +124,31 @@ INSERT IGNORE INTO regras (id, conteudo) VALUES (
 --   UNIQUE KEY uq_votos_pelada_votante_votado (pelada_id, votante_id, votado_id),
 --   INDEX idx_votos_votado (votado_id),
 --   INDEX idx_votos_criado_em (criado_em)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =========================================================
+-- Migração: foto de perfil (bancos já existentes)
+-- =========================================================
+-- ALTER TABLE pessoas ADD COLUMN foto TEXT NULL;
+
+-- =========================================================
+-- Migração: Superclássico (bancos já existentes)
+-- =========================================================
+-- CREATE TABLE IF NOT EXISTS superclassicos (
+--   id              CHAR(36) NOT NULL PRIMARY KEY,
+--   data_conquista  DATE     NOT NULL,
+--   criado_por      CHAR(36) NOT NULL,
+--   criado_em       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+--   CONSTRAINT fk_superclassicos_criador FOREIGN KEY (criado_por) REFERENCES pessoas(id),
+--   INDEX idx_superclassicos_data (data_conquista)
+-- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+-- CREATE TABLE IF NOT EXISTS superclassico_vencedores (
+--   id                 CHAR(36) NOT NULL PRIMARY KEY,
+--   superclassico_id   CHAR(36) NOT NULL,
+--   pessoa_id          CHAR(36) NOT NULL,
+--   CONSTRAINT fk_sc_vencedores_edicao FOREIGN KEY (superclassico_id) REFERENCES superclassicos(id) ON DELETE CASCADE,
+--   CONSTRAINT fk_sc_vencedores_pessoa FOREIGN KEY (pessoa_id) REFERENCES pessoas(id),
+--   UNIQUE KEY uq_sc_vencedores_edicao_pessoa (superclassico_id, pessoa_id)
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =========================================================

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
+import Avatar from "@/components/Avatar";
 import { Pessoa, Posicao } from "@/types";
 
 const fetcher = (url: string) =>
@@ -95,8 +96,15 @@ export default function AdicionarNaListaModal({
               onClick={() => onEscolher(pessoa.id)}
               className="flex w-full items-center justify-between rounded-md px-3 py-2.5 text-left hover:bg-pitch-raised disabled:opacity-60"
             >
-              <span className="truncate text-sm text-chalk">
-                {pessoa.apelido}
+              <span className="flex min-w-0 items-center gap-2">
+                <Avatar
+                  src={pessoa.foto}
+                  apelido={pessoa.apelido}
+                  className="h-7 w-7 text-xs"
+                />
+                <span className="truncate text-sm text-chalk">
+                  {pessoa.apelido}
+                </span>
               </span>
               {!pessoa.ativo && (
                 <span className="ml-2 text-xs text-chalk-muted">inativo</span>

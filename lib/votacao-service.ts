@@ -94,7 +94,7 @@ export async function listarNotasDoMes(
 ): Promise<NotaMensal[]> {
   const { inicio, fim } = inicioFimMesAtual(agora);
   const [rows] = await pool.execute(
-    `SELECT p.id AS pessoa_id, p.apelido, v.nota
+    `SELECT p.id AS pessoa_id, p.apelido, p.foto, v.nota
      FROM votos v
      JOIN pessoas p ON p.id = v.votado_id
      JOIN peladas pl ON pl.id = v.pelada_id
@@ -104,15 +104,17 @@ export async function listarNotasDoMes(
 
   const porJogador = new Map<
     string,
-    { apelido: string; notas: number[] }
+    { apelido: string; foto: string | null; notas: number[] }
   >();
   for (const row of rows as {
     pessoa_id: string;
     apelido: string;
+    foto: string | null;
     nota: number | string;
   }[]) {
     const atual = porJogador.get(row.pessoa_id) ?? {
       apelido: row.apelido,
+      foto: row.foto ?? null,
       notas: [],
     };
     atual.notas.push(Number(row.nota));
@@ -120,9 +122,9 @@ export async function listarNotasDoMes(
   }
 
   return [...porJogador.entries()]
-    .map(([pessoaId, { apelido, notas }]) => {
+    .map(([pessoaId, { apelido, foto, notas }]) => {
       const { media, usados } = mediaSemOutliers(notas);
-      return { pessoaId, apelido, media, totalVotos: usados };
+      return { pessoaId, apelido, foto, media, totalVotos: usados };
     })
     .sort((a, b) => b.media - a.media || a.apelido.localeCompare(b.apelido));
 }

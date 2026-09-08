@@ -3,10 +3,12 @@
 import useSWR from "swr";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import Avatar from "@/components/Avatar";
 
 interface LinhaRanking {
   id: string;
   apelido: string;
+  foto?: string | null;
   gols: number;
   assistencias: number;
 }
@@ -85,8 +87,15 @@ export default function RankingClient() {
               </span>
 
               {/* Jogador */}
-              <span className="truncate font-medium text-chalk">
-                {jogador.apelido}
+              <span className="flex min-w-0 items-center gap-2">
+                <Avatar
+                  src={jogador.foto}
+                  apelido={jogador.apelido}
+                  className="h-8 w-8 text-xs"
+                />
+                <span className="truncate font-medium text-chalk">
+                  {jogador.apelido}
+                </span>
               </span>
 
               {/* Gols */}

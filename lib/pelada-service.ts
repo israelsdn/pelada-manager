@@ -25,6 +25,7 @@ interface LinhaInscricao {
   id: string;
   pessoa_id: string;
   apelido: string;
+  foto: string | null;
   status: StatusInscricao;
   posicao_suplente: Posicao | null;
   device_id: string;
@@ -36,13 +37,14 @@ function paraItemLista(row: LinhaInscricao): ItemLista {
     id: row.id,
     pessoaId: row.pessoa_id,
     apelido: row.apelido,
+    foto: row.foto ?? null,
     posicao: row.posicao_suplente ?? undefined,
   };
 }
 
 async function montarPelada(row: LinhaPelada): Promise<Pelada> {
   const [rows] = await pool.execute(
-    `SELECT i.*, p.apelido FROM inscricoes i
+    `SELECT i.*, p.apelido, p.foto FROM inscricoes i
      JOIN pessoas p ON p.id = i.pessoa_id
      WHERE i.pelada_id = ?
      ORDER BY i.criado_em ASC`,

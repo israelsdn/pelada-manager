@@ -49,13 +49,21 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user) {
         token.id = user.id;
         token.nomeCompleto = (user as any).nomeCompleto;
         token.apelido = (user as any).apelido;
         token.telefone = (user as any).telefone;
         token.administrador = (user as any).administrador;
+      }
+      if (trigger === "update" && session) {
+        if (session.nomeCompleto !== undefined) {
+          token.nomeCompleto = session.nomeCompleto;
+        }
+        if (session.apelido !== undefined) {
+          token.apelido = session.apelido;
+        }
       }
       return token;
     },

@@ -15,6 +15,7 @@ export async function GET() {
     const ranking = pessoas.map((p) => ({
       id: p.id,
       apelido: p.apelido,
+      foto: p.foto ?? null,
       gols: p.gols,
       assistencias: p.assistencias,
     }));

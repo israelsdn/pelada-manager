@@ -1,6 +1,7 @@
 interface JerseySlotProps {
   numero: number;
   apelido?: string;
+  foto?: string | null;
   destaque?: boolean; // true quando é o próprio usuário logado
   onVagoClick?: () => void;
   onRemover?: () => void;
@@ -10,6 +11,7 @@ interface JerseySlotProps {
 export default function JerseySlot({
   numero,
   apelido,
+  foto,
   destaque,
   onVagoClick,
   onRemover,
@@ -21,7 +23,7 @@ export default function JerseySlot({
   const circulo = (
     <div
       className={[
-        "flex h-12 w-12 items-center justify-center rounded-full border-2 font-mono text-sm font-semibold sm:h-14 sm:w-14 sm:text-base",
+        "flex h-12 w-12 items-center justify-center overflow-hidden rounded-full border-2 font-mono text-sm font-semibold sm:h-14 sm:w-14 sm:text-base",
         preenchido
           ? destaque
             ? "border-card-yellow bg-card-yellow/10 text-card-yellow"
@@ -31,7 +33,19 @@ export default function JerseySlot({
             : "border-dashed border-pitch-line text-chalk-muted",
       ].join(" ")}
     >
-      {preenchido ? numero : vagoClicavel ? "+" : numero}
+      {foto ? (
+        <img
+          src={foto}
+          alt={apelido ?? ""}
+          className="h-full w-full object-cover"
+        />
+      ) : preenchido ? (
+        numero
+      ) : vagoClicavel ? (
+        "+"
+      ) : (
+        numero
+      )}
     </div>
   );
 

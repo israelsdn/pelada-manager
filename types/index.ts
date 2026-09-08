@@ -8,6 +8,7 @@ export interface Pessoa {
   administrador: boolean;
   gols: number;
   assistencias: number;
+  foto?: string | null;
 }
 
 // ---- Inscrições da Pelada ----
@@ -18,6 +19,7 @@ export interface ItemLista {
   id: string; // id da inscrição
   pessoaId: string;
   apelido: string;
+  foto?: string | null;
   posicao?: Posicao; // presente somente para quem caiu na lista de suplentes
 }
 
@@ -54,8 +56,22 @@ export interface Voto {
 export interface NotaMensal {
   pessoaId: string;
   apelido: string;
+  foto?: string | null;
   media: number;
   totalVotos: number;
+}
+
+// ---- Superclássico ----
+export interface VencedorSuperclassico {
+  pessoaId: string;
+  apelido: string;
+  foto?: string | null;
+}
+
+export interface EdicaoSuperclassico {
+  id: string;
+  data: string; // YYYY-MM-DD
+  vencedores: VencedorSuperclassico[];
 }
 
 // ---- Sessão NextAuth ----
